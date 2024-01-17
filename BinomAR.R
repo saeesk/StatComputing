@@ -16,31 +16,33 @@ draw_binom <- function(n, p)
   
   # upper bound calculated in the notes
   x <- 0:n
-  all_c <- choose(n,x) * (1-p)^(n - 2*x) * p^(x-1)  # from notes
-  c <- max(all_c)  # what is the value of c ?
-  
+  #all_c <- choose(n,x) * (1-p)^(n - 2*x) * p^(x-1)  # from notes
+  p.star <- 1/(n*p + 1)
+  all_c = choose(n,x)*((p)^x) * ((1-p)^(n-x))
+  all_c = all_c /(p.star * (1 -p.star)^x)
+  c <- max(all_c)  + 0.001 # what is the value of c ?
+                            #as c inreases , loops increase. For accuracy, add 0.001 
+                            #0.001 is for machine tolerance 
   while(accept == 0)
   {
     try <- try + 1
-
+    
     U <- runif(1) 
-    prop <- rgeom(1, prob = p) #draw proposal 
+    prop <- rgeom(1, prob = p.star) 
     
-    p_j = pbinom(prop,size = n,prob = p) - pbinom(prop-1 ,size = n ,prob = p)
-    q_j = pgeom(prop,p)- pgeom(prop-1 , p)
+    ratio= choose(n,prop)*((p)^prop) * ((1-p)^(n-prop))
+    ratio = ratio/(p.star * (1 -p.star)^prop)
+    ratio = ratio/c
     
-    ratio = (p_j/(c*q_j))
-   
-
     if(U < ratio)
     {
       accept <- 1
       rtn <- prop
     }
   }
-  return(c(rtn, try))
+  return(c(rtn, try ,c))
 }
-draw_binom(n = 10, p = .25)
+draw_binom(n = 10, p = .25 )  #look for numerical instability 
 
 
 ###
@@ -53,10 +55,10 @@ samp <- numeric(N)
 n.try <- numeric(N)
 for(t in 1:N)
 {
-   # I use as a dummy variable often
-   foo <- draw_binom(n = 10, p = .25)
-   samp[t] <- foo[1]
-   n.try[t] <- foo[2]
+  # I use as a dummy variable often
+  foo <- draw_binom(n = 10, p = .25)
+  samp[t] <- foo[1]
+  n.try[t] <- foo[2]
 }
 mean(samp) #should be n*p = 2.5
 mean(n.try)
@@ -118,12 +120,12 @@ draw_tpois <- function(m, lambda)
   try <- 0 # Will track the number of proposals
   x <- 0:m
   
- 
+  
   #calculating the pmf of tpois
   foo = -lambda + x*log(lambda) - lfactorial(x) 
   foo = exp(foo)
   c = 1/sum(foo)  #calculate the upper bound experrsio  with poisson(usual poisson)with same lambda
-                   #as proporsal) 
+  #as proporsal) 
   tpmf = c*foo
   
   
@@ -200,13 +202,12 @@ find_c = function(p , lambda , m)
   c = max(ratio)
   return(c)
 }
- 
+
 
 y = sapply(10:30 , function(i) find_c(0.5,0.5,i))
 
 plot(10:30 , y , pch = 16 , main = "value of c ")  #the values shoot up! 
 #upper bound is not convergent! 
-
 
 
 
